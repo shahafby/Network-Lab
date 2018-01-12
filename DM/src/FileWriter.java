@@ -14,26 +14,24 @@ public class FileWriter implements Runnable {
 
 	private final BlockingQueue<Chunk> chunkQueue;
 	private DownloadableMetadata downloadableMetadata;
-	private String fileName;
 
-	FileWriter(DownloadableMetadata downloadableMetadata, BlockingQueue<Chunk> chunkQueue, String fileName) {
+	FileWriter(DownloadableMetadata downloadableMetadata, BlockingQueue<Chunk> chunkQueue) {
 		this.chunkQueue = chunkQueue;
 		this.downloadableMetadata = downloadableMetadata;
-		this.fileName = fileName;
 	}
 
-	private void writeChunks() throws IOException {
-		// TODO
+	private void writeChunks() throws IOException, InterruptedException {
 
-		try (RandomAccessFile raf = new RandomAccessFile(new File(this.fileName), "rws")) {
+		int totalNUmOfChunksInQueue, numOfWrittenChunks = 0;
+		Chunk currentChuk;
+		try (RandomAccessFile raf = new RandomAccessFile(new File(downloadableMetadata.getFilename()), "rws")) {
+			totalNUmOfChunksInQueue = downloadableMetadata.totalNumOfChunks;
 
-			while (true) {
-				for (Chunk currentChuk : chunkQueue) {
-					if (currentChuk != null) {
-						raf.seek(currentChuk.getOffset());
-						raf.write(currentChuk.getData());
-					}
-				}
+			while (numOfWrittenChunks < totalNUmOfChunksInQueue) {
+				currentChuk = chunkQueue.take();
+				raf.seek(currentChuk.getOffset());
+				raf.write(currentChuk.getData());
+				numOfWrittenChunks++;
 			}
 		}
 	}
@@ -42,7 +40,7 @@ public class FileWriter implements Runnable {
 	public void run() {
 		try {
 			this.writeChunks();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			// TODO
 		}

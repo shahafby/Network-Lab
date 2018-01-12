@@ -40,19 +40,27 @@ public class HTTPRangeGetter implements Runnable {
 		connection.setConnectTimeout(CONNECT_TIMEOUT);
 		connection.setReadTimeout(READ_TIMEOUT);
 		connection.setRequestMethod("GET");
-		connection.setRequestProperty("Range", "bytes=" + this.range.getStart() + "-" + (this.range.getEnd() - 1));
+		connection.setRequestProperty("Range", "bytes=" + this.range.getStart() + "-" + (this.range.getEnd()));
 		connection.connect();
 
 		stream = connection.getInputStream();
 		// while the worker is still in his defined range
 		while (offset < range.getEnd()) {
-			if (!tokenBucket.iseEmpty()) {
-				diff = range.getEnd() - offset; //
-				amountOfBytesToRead = (diff > CHUNK_SIZE)? CHUNK_SIZE : diff; //
-				tokenBucket.take(amountOfBytesToRead); //
-				bytesRead = stream.read(data, 0, (int)amountOfBytesToRead); //
-				data = Arrays.copyOf(data, (int)amountOfBytesToRead); // 
+			diff = range.getEnd() - offset;
+			System.out.println("offset:" + offset);
+			System.out.println("diff:" + diff);
+			
+			if (diff > CHUNK_SIZE) {
+				tokenBucket.take(CHUNK_SIZE);
+				bytesRead = stream.read(data, 0, (int) CHUNK_SIZE);
 				chunk = new Chunk(data, offset, data.length);
+				this.outQueue.add(chunk);
+				offset += bytesRead;
+			} else {
+				tokenBucket.take(diff);
+				byte[] lastRange = new byte[(int) diff];
+				bytesRead = stream.read(lastRange, 0, (int) diff);
+				chunk = new Chunk(lastRange, offset, data.length);
 				this.outQueue.add(chunk);
 				offset += bytesRead;
 			}
