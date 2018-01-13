@@ -75,21 +75,26 @@ public class IdcDm {
 		try {
 
 			contentLength = getLength(url);
-			ranges = fillRanges(contentLength);
+			ranges = createRanges(contentLength);
 			// if the size of the file devided by the size of a chunk has no
 			// reminder we set the queue size to that size.
 			// o.w we add one more spce for the reminder chunk
 			queueSize = contentLength / 4096;
 			queueSize = (contentLength % 4096 == 0) ? queueSize : queueSize + 1;
 			dataQueue = new ArrayBlockingQueue<Chunk>((int) queueSize);
+			DM = new DownloadableMetadata(url, ranges);
 
 			t_limiter = new Thread(new RateLimiter(tokenBucket, maxBytesPerSecond));
 			t_limiter.start();
 
+			
+			
+			
+			
+			
 			numOfChunksForWorker = (int) (queueSize / numberOfWorkers);
 			workersWithExtraChunk = (int) (queueSize % numberOfWorkers);
 
-			DM = new DownloadableMetadata(url, (int) queueSize);
 
 			for (int i = 0; i < numberOfWorkers; i++) {
 				// amounts of bytes to be read bt all workers

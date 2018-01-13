@@ -14,6 +14,7 @@ class DownloadableMetadata implements java.io.Serializable {
     private final String metadataFilename;
     private String filename;
     private String url;
+    private Range[] ranges;
     protected long sizeOfRange;
     private ArrayList<Range> addedRanges;
 	protected long sizeOfFile;
@@ -22,12 +23,12 @@ class DownloadableMetadata implements java.io.Serializable {
 	protected Chunk currentChunk;
 	protected int totalNumOfChunks;
 
-    DownloadableMetadata(String url, int numOfChunks) {
+    DownloadableMetadata(String url, Range[] ranges){
         this.url = url;
         this.filename = getName(url);
         this.metadataFilename = getMetadataName(filename);
         this.addedRanges = new ArrayList<Range>();
-        this.totalNumOfChunks = numOfChunks;
+        this.ranges = ranges;
     }
 
     private static String getMetadataName(String filename) {
@@ -81,8 +82,4 @@ class DownloadableMetadata implements java.io.Serializable {
         return url;
     }
     
-    void calcCompletedPercentage() {
-    	long oldSizeOfFile = sizeOfFile, newSizeOfFile = 0;
-    	
-    }
 }
