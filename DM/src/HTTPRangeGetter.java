@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 
 /**
@@ -28,7 +27,7 @@ public class HTTPRangeGetter implements Runnable {
 
 	private void downloadRange() throws IOException, InterruptedException {
 		int bytesRead;
-		long diff, offset = this.range.getStart();
+		long offset = this.range.getStart();
 		byte[] data = new byte[CHUNK_SIZE];
 		Chunk chunk;
 		InputStream stream;
@@ -44,13 +43,13 @@ public class HTTPRangeGetter implements Runnable {
 		connection.connect();
 
 		stream = connection.getInputStream();
+		tokenBucket.take(CHUNK_SIZE);
 		// while the worker is still in his defined range
-		while (offset < this.range.getEnd()) {
-				tokenBucket.take(CHUNK_SIZE);	//when to take tpkens
-				bytesRead = stream.read(data, 0, (int) CHUNK_SIZE);
+		while ((bytesRead = stream.read(data, 0, (int) CHUNK_SIZE)) != -1) {
 				chunk = new Chunk(data, offset, bytesRead, this.range);
 				this.outQueue.add(chunk);
 				offset += bytesRead;
+				tokenBucket.take(CHUNK_SIZE);
 		}
 		stream.close();
 		connection.disconnect();

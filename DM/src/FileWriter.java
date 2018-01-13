@@ -22,32 +22,34 @@ public class FileWriter implements Runnable {
 
 	private void writeChunks() throws IOException, InterruptedException {
 		long currentChukOffset, currentChukRangeEnd, bytesSum = 0;
-		int currentChukSize, totalNUmOfChunksInQueue, numOfWrittenChunks = 0;
+		int currentChukSize;
 		Chunk currentChuk;
 		int prevPercent = 0, currentPercent;
 		try (RandomAccessFile raf = new RandomAccessFile(new File(downloadableMetadata.getFilename()), "rws")) {
-			totalNUmOfChunksInQueue = downloadableMetadata.totalNumOfChunks;
 			System.out.println("Downloaded: 0%");
-			
-			while (numOfWrittenChunks < totalNUmOfChunksInQueue) { // should be replaced by while true (?)
-				currentChuk = chunkQueue.take();
+			while(!(currentChuk = chunkQueue.take()).getIsLastChunk()) { 
+				
 				raf.seek(currentChuk.getOffset());
 				raf.write(currentChuk.getData());
 				currentChukOffset = currentChuk.getOffset();
 				currentChukSize = currentChuk.getSize_in_bytes();
 				currentChukRangeEnd = currentChuk.getThisChunkRange().getEnd();
+						
+				// if the current chink is the last chunk of the current range mark this range as written.
 				if(currentChukOffset + currentChukSize == currentChukRangeEnd){
 					currentChuk.getThisChunkRange().setWasWritten();
 				}
+				downloadableMetadata.creatMetadataFile(downloadableMetadata);
 				bytesSum += currentChuk.getSize_in_bytes();
-				currentPercent = (int) (100 * bytesSum / this.downloadableMetadata.sizeOfFile);
+				currentPercent = (int) (100 * bytesSum / this.downloadableMetadata.getSizeOfFile());
 				if(currentPercent != prevPercent) {
 					System.out.println("Downloaded: " + currentPercent + "%");
 				}
 				prevPercent = currentPercent;
-				numOfWrittenChunks++;
 			}
 			System.out.println("Downloaded: 100%");
+		} catch (Exception e) {
+			
 		}
 	}
 

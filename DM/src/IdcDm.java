@@ -61,12 +61,10 @@ public class IdcDm {
 	 */
 	private static void DownloadURL(String url, int numberOfWorkers, Long maxBytesPerSecond) {
 
-		int workersWithExtraChunk, numOfChunksForWorker;
 		Chunk terminationChunk;
-		long end, queueSize, contentLength, offset = 0;
-		Thread t_httpRangeGetter, t_writer, t_limiter;
+		long  queueSize, contentLength;
+		Thread t_writer, t_limiter;
 		Range[] ranges;
-		Thread[] workers = new Thread[numberOfWorkers];
 		BlockingQueue<Chunk> dataQueue;
 		DownloadableMetadata downloadableMetadata;
 		TokenBucket tokenBucket = new TokenBucket();
@@ -84,7 +82,8 @@ public class IdcDm {
 			queueSize = (contentLength % 4096 == 0) ? queueSize : queueSize + 1;
 			dataQueue = new ArrayBlockingQueue<Chunk>((int) queueSize);
 			downloadableMetadata = new DownloadableMetadata(url, ranges, contentLength);
-
+			
+			maxBytesPerSecond = (maxBytesPerSecond != null)? maxBytesPerSecond : Long.MAX_VALUE;
 			t_limiter = new Thread(new RateLimiter(tokenBucket, maxBytesPerSecond));
 			t_limiter.start();
 			t_writer = new Thread(new FileWriter(downloadableMetadata, dataQueue), "writing thread");
@@ -95,51 +94,15 @@ public class IdcDm {
 			}
 			executor.shutdown();
 			try {
-				executor.awaitTermination(4, TimeUnit.SECONDS);
+				executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			tokenBucket.terminate();
 			terminationChunk = new Chunk(null, 0, 0, null);
 			terminationChunk.setLastChunk();
 			dataQueue.add(terminationChunk);
 			
-			
-			
-			
-			numOfChunksForWorker = (int) (queueSize / numberOfWorkers);
-			workersWithExtraChunk = (int) (queueSize % numberOfWorkers);
-
-
-			for (int i = 0; i < numberOfWorkers; i++) {
-				// amounts of bytes to be read bt all workers
-				end = (offset + numOfChunksForWorker * 4096) - 1; // offset
-																	// check
-				// the workers that has extra chunks to read due to non
-				// devisible of content length
-				if (i < workersWithExtraChunk) { // offset check
-					end = offset + (numOfChunksForWorker + 1) * 4096 - 1;
-				} else if (i == numberOfWorkers - 1) {
-					end = offset + numOfChunksForWorker * 4096 - 1 - (4096 - (contentLength % 4096));
-				}
-				Range range = new Range(offset, end);
-				HTTPRangeGetter rg = new HTTPRangeGetter(url, range, dataQueue, tokenBucket);
-				workers[i] = t_httpRangeGetter = new Thread(rg, "thread_" + i);
-				t_httpRangeGetter.start();
-
-				offset = end; // offset check
-			}
-			t_writer = new Thread(new FileWriter(downloadableMetadata, dataQueue), "writing thread");
-			t_writer.start();
-
-			// close worker threads
-			for (Thread worker : workers) {
-				try {
-					worker.join();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-			tokenBucket.terminate();
 			// close writer and limiter threads
 			try {
 				t_writer.join();
@@ -148,6 +111,8 @@ public class IdcDm {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			downloadableMetadata.delete();
+			
 
 		} catch (IOException e) {
 			System.out.println("problen connecting to server");
@@ -160,14 +125,6 @@ public class IdcDm {
 		URL urlObj = new URL(url);
 		HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
 		return connection.getContentLengthLong();
-	}
-
-	private static void creatMetadataFile(DownloadableMetadata DM) throws Exception {
-		// Write metadata file
-		try (ObjectOutputStream metadataOutStream = new ObjectOutputStream(
-				new FileOutputStream(DM.getFilename() + ".metadata.tmp"))) {
-			metadataOutStream.writeObject(DM);
-		}
 	}
 
 	private static Range[] createRanges(long contentLength) {

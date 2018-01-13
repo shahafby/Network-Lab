@@ -17,7 +17,7 @@ public class RateLimiter implements Runnable {
 	@Override
 	public void run() {
 		while (true) {
-			if(!this.tokenBucket.terminated()) return;
+			if(this.tokenBucket.terminated()) return;
 			// adding maxBps to token bucket every second
 			this.tokenBucket.add(this.maxBytesPerSecond);
 			try {

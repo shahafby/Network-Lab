@@ -1,4 +1,7 @@
-import java.util.ArrayList;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 
 /**
  * Describes a file's metadata: URL, file name, size, and which parts already
@@ -19,6 +22,8 @@ class DownloadableMetadata implements java.io.Serializable {
 	private Range[] ranges;
 	private int lastRangeThatWritten = 0;
 	private long sizeOfFile;
+	private File metadataFile;
+	private FileOutputStream fileOutStream;
 
 	DownloadableMetadata(String url, Range[] ranges, long fileSize) {
 		this.url = url;
@@ -62,8 +67,9 @@ class DownloadableMetadata implements java.io.Serializable {
 	// // TODO
 	// }
 
-	void delete() {
-		// TODO
+	void delete() throws IOException {
+		fileOutStream.close();
+		metadataFile.delete();
 	}
 
 	Range getMissingRange() {
@@ -82,6 +88,15 @@ class DownloadableMetadata implements java.io.Serializable {
 
 	long getSizeOfFile() {
 		return this.sizeOfFile;
+	}
+	
+	void creatMetadataFile(DownloadableMetadata DM) throws Exception {
+		metadataFile = new File(DM.getMetadataName(DM.filename));
+		fileOutStream = new FileOutputStream(metadataFile);
+		// Write metadata file
+		try (ObjectOutputStream metadataOutStream = new ObjectOutputStream(fileOutStream)) {
+			metadataOutStream.writeObject(DM);
+		}
 	}
 
 }
