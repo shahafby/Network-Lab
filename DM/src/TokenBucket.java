@@ -17,22 +17,17 @@ class TokenBucket {
 	
 	private AtomicLong tokenAmount;
 	private AtomicBoolean isTerminate;
-	private AtomicBoolean isEmpty;
 
     TokenBucket() {
     	this.isTerminate = new AtomicBoolean(false);
     	this.tokenAmount = new AtomicLong();
-    	this.isEmpty = new AtomicBoolean(true);
     }
 
-    void take(long tokens) {
+    synchronized void take(long tokens) {
     	long currentAmount = this.tokenAmount.get();
     	// setting the amount of available tokens to be the current amount minus the taken tokens
     	this.tokenAmount.set(currentAmount - tokens); 
-    	// updating the terminate status
-    	if(this.tokenAmount.get() <= 0) {
-    		this.isEmpty.set(true);
-    	}
+    	
     }
 
     void terminate() {
@@ -49,11 +44,7 @@ class TokenBucket {
     
     void add(long tokens) {
     	if(this.tokenAmount.addAndGet(tokens) > 0){
-    		this.isEmpty.set(false);
     	}
     }
     
-    boolean iseEmpty() {
-    	return this.isEmpty.get();
-    }
 }
