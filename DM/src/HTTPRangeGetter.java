@@ -47,8 +47,8 @@ public class HTTPRangeGetter implements Runnable {
 		// while the worker is still in his defined range
 		while (offset < range.getEnd()) {
 			diff = range.getEnd() - offset;
-			System.out.println("offset:" + offset);
-			System.out.println("diff:" + diff);
+			//System.out.println("offset:" + offset);
+			//System.out.println("diff:" + diff);
 			
 			if (diff > CHUNK_SIZE) {
 				tokenBucket.take(CHUNK_SIZE);

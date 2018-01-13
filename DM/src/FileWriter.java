@@ -24,15 +24,23 @@ public class FileWriter implements Runnable {
 
 		int totalNUmOfChunksInQueue, numOfWrittenChunks = 0;
 		Chunk currentChuk;
+		int prevPercent = 0, currentPercent;
 		try (RandomAccessFile raf = new RandomAccessFile(new File(downloadableMetadata.getFilename()), "rws")) {
 			totalNUmOfChunksInQueue = downloadableMetadata.totalNumOfChunks;
-
+			System.out.println("Downloaded: 0%");
+			
 			while (numOfWrittenChunks < totalNUmOfChunksInQueue) {
 				currentChuk = chunkQueue.take();
 				raf.seek(currentChuk.getOffset());
 				raf.write(currentChuk.getData());
+				currentPercent = (100 * numOfWrittenChunks / totalNUmOfChunksInQueue);
+				if(currentPercent != prevPercent) {
+					System.out.println("Downloaded: " + currentPercent + "%");
+				}
+				prevPercent = currentPercent;
 				numOfWrittenChunks++;
 			}
+			System.out.println("Downloaded: 100%");
 		}
 	}
 
