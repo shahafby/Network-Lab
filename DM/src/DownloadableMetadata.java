@@ -1,85 +1,87 @@
 import java.util.ArrayList;
 
 /**
- * Describes a file's metadata: URL, file name, size, and which parts already downloaded to disk.
+ * Describes a file's metadata: URL, file name, size, and which parts already
+ * downloaded to disk.
  *
- * The metadata (or at least which parts already downloaded to disk) is constantly stored safely in disk.
- * When constructing a new metadata object, we first check the disk to load existing metadata.
+ * The metadata (or at least which parts already downloaded to disk) is
+ * constantly stored safely in disk. When constructing a new metadata object, we
+ * first check the disk to load existing metadata.
  *
  * CHALLENGE: try to avoid metadata disk footprint of O(n) in the average case
  * HINT: avoid the obvious bitmap solution, and think about ranges...
  */
 class DownloadableMetadata implements java.io.Serializable {
 	private static final long serialVersionUID = 1L;
-    private final String metadataFilename;
-    private String filename;
-    private String url;
-    private Range[] ranges;
-    protected long sizeOfRange;
-    private ArrayList<Range> addedRanges;
-	protected long sizeOfFile;
-	protected int numOfRanges;
-	protected int rangeCounter = 0;
-	protected Chunk currentChunk;
-	protected int totalNumOfChunks;
+	private final String metadataFilename;
+	private String filename;
+	private String url;
+	private Range[] ranges;
+	private int lastRangeThatWritten = 0;
+	private long sizeOfFile;
 
-    DownloadableMetadata(String url, Range[] ranges){
-        this.url = url;
-        this.filename = getName(url);
-        this.metadataFilename = getMetadataName(filename);
-        this.addedRanges = new ArrayList<Range>();
-        this.ranges = ranges;
-    }
+	DownloadableMetadata(String url, Range[] ranges, long fileSize) {
+		this.url = url;
+		this.filename = getName(url);
+		this.metadataFilename = getMetadataName(filename);
+		this.ranges = ranges;
+		this.sizeOfFile = fileSize;
+	}
 
-    private static String getMetadataName(String filename) {
-        return filename + ".metadata";
-    }
+	private static String getMetadataName(String filename) {
+		return filename + ".metadata";
+	}
 
-    private static String getName(String path) {
-        return path.substring(path.lastIndexOf('/') + 1, path.length());
-    }
+	private static String getName(String path) {
+		return path.substring(path.lastIndexOf('/') + 1, path.length());
+	}
 
-    /**
-     * add the sent range to array, remember which ranges was already sent.
-     * 
-     * @param range - range to add
-     * @param place - place in array
-     */
-    void addRange(Range range, int place) {
-        addedRanges.add(place, range);
-        rangeCounter++;
-    }
+	/**
+	 * add the sent range to array, remember which ranges was already sent.
+	 * 
+	 * @param range
+	 *            - range to add
+	 * @param place
+	 *            - place in array
+	 */
+	void addRange(Range range, int place) {
+		// TODO
+	}
 
-    String getFilename() {
-        return filename;
-    }
-    
-    /**
-     * check if all the ranges is in the array, i.e. all ranges passed, if so return true.
-     * @return 
-     */
-    boolean isCompleted() {
-    	if(rangeCounter == numOfRanges) {
-    		return true;
-        }
-        return false;
-    }
+	String getFilename() {
+		return filename;
+	}
 
-    void delete() {
-        //TODO
-    }
+	/**
+	 * check if all the ranges is in the array, i.e. all ranges passed, if so
+	 * return true.
+	 * 
+	 * @return
+	 */
+	// boolean isCompleted() {
+	// // TODO
+	// }
 
-    Range getMissingRange() {
-    	for(int i = 0; i < sizeOfRange; i++) {
-    		if(addedRanges.get(i) == null) {
-    			return addedRanges.get(i);
-    		}
-    	}
-    	return null;
-    }
+	void delete() {
+		// TODO
+	}
 
-    String getUrl() {
-        return url;
-    }
-    
+	Range getMissingRange() {
+		for (int i = lastRangeThatWritten; i < ranges.length; i++) {
+			if (!ranges[i].getWasWritten()) {
+				lastRangeThatWritten = i;
+				return ranges[i];
+			}
+		}
+		return null;
+	}
+
+	String getUrl() {
+		return url;
+	}
+
+	long getSizeOfFile() {
+		return this.sizeOfFile;
+	}
+
 }

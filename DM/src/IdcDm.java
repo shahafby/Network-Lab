@@ -62,18 +62,19 @@ public class IdcDm {
 	private static void DownloadURL(String url, int numberOfWorkers, Long maxBytesPerSecond) {
 
 		int workersWithExtraChunk, numOfChunksForWorker;
-		long end, queueSize, contentLength, sizeOfRange, offset = 0;
+		Chunk terminationChunk;
+		long end, queueSize, contentLength, offset = 0;
 		Thread t_httpRangeGetter, t_writer, t_limiter;
 		Range[] ranges;
 		Thread[] workers = new Thread[numberOfWorkers];
 		BlockingQueue<Chunk> dataQueue;
-		DownloadableMetadata DM;
+		DownloadableMetadata downloadableMetadata;
 		TokenBucket tokenBucket = new TokenBucket();
-
+		Range currRange;
 		ExecutorService executor = Executors.newFixedThreadPool(numberOfWorkers);
 
 		try {
-
+			
 			contentLength = getLength(url);
 			ranges = createRanges(contentLength);
 			// if the size of the file devided by the size of a chunk has no
@@ -82,12 +83,25 @@ public class IdcDm {
 			queueSize = contentLength / 4096;
 			queueSize = (contentLength % 4096 == 0) ? queueSize : queueSize + 1;
 			dataQueue = new ArrayBlockingQueue<Chunk>((int) queueSize);
-			DM = new DownloadableMetadata(url, ranges);
+			downloadableMetadata = new DownloadableMetadata(url, ranges, contentLength);
 
 			t_limiter = new Thread(new RateLimiter(tokenBucket, maxBytesPerSecond));
 			t_limiter.start();
-
+			t_writer = new Thread(new FileWriter(downloadableMetadata, dataQueue), "writing thread");
+			t_writer.start();
 			
+			while((currRange = downloadableMetadata.getMissingRange()) != null) {
+				executor.submit(new HTTPRangeGetter(url, currRange, dataQueue, tokenBucket));
+			}
+			executor.shutdown();
+			try {
+				executor.awaitTermination(4, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			terminationChunk = new Chunk(null, 0, 0, null);
+			terminationChunk.setLastChunk();
+			dataQueue.add(terminationChunk);
 			
 			
 			
@@ -114,7 +128,7 @@ public class IdcDm {
 
 				offset = end; // offset check
 			}
-			t_writer = new Thread(new FileWriter(DM, dataQueue), "writing thread");
+			t_writer = new Thread(new FileWriter(downloadableMetadata, dataQueue), "writing thread");
 			t_writer.start();
 
 			// close worker threads

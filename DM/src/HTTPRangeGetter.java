@@ -46,7 +46,7 @@ public class HTTPRangeGetter implements Runnable {
 		stream = connection.getInputStream();
 		// while the worker is still in his defined range
 		while (offset < this.range.getEnd()) {
-				tokenBucket.take(CHUNK_SIZE);
+				tokenBucket.take(CHUNK_SIZE);	//when to take tpkens
 				bytesRead = stream.read(data, 0, (int) CHUNK_SIZE);
 				chunk = new Chunk(data, offset, bytesRead, this.range);
 				this.outQueue.add(chunk);

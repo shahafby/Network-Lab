@@ -33,4 +33,8 @@ class Range implements Serializable {
 	void setWasWritten() {
 		this.wasWritten = true;
 	}
+	
+	boolean getWasWritten(){
+		return this.wasWritten;
+	}
 }
