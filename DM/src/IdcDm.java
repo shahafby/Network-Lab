@@ -83,7 +83,7 @@ public class IdcDm {
 			numOfChunksForWorker = (int) (queueSize / numberOfWorkers);
 			workersWithExtraChunk = (int) (queueSize % numberOfWorkers);
 			
-			DM = new DownloadableMetadata(url, numOfChunksForWorker);
+			DM = new DownloadableMetadata(url, (int)queueSize);
 			
 			for (int i = 0; i < numberOfWorkers; i++) {
 				// amounts of bytes to be read bt all workers
@@ -100,7 +100,7 @@ public class IdcDm {
 				workers[i] = t_httpRangeGetter = new Thread(rg, "thread_" + i);
 				t_httpRangeGetter.start();
 
-				offset += end; // offset check
+				offset = end; // offset check
 			}
 			t_writer = new Thread(new FileWriter(DM, dataQueue), "writing thread");
 			t_writer.start();
