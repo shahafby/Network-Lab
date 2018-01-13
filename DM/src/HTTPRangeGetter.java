@@ -28,7 +28,7 @@ public class HTTPRangeGetter implements Runnable {
 
 	private void downloadRange() throws IOException, InterruptedException {
 		int bytesRead;
-		long amountOfBytesToRead, diff, offset = this.range.getStart();
+		long diff, offset = this.range.getStart();
 		byte[] data = new byte[CHUNK_SIZE];
 		Chunk chunk;
 		InputStream stream;
@@ -46,23 +46,11 @@ public class HTTPRangeGetter implements Runnable {
 		stream = connection.getInputStream();
 		// while the worker is still in his defined range
 		while (offset < this.range.getEnd()) {
-			diff = this.range.getEnd() - offset;
-			
-			if (diff > CHUNK_SIZE) {
 				tokenBucket.take(CHUNK_SIZE);
-				
 				bytesRead = stream.read(data, 0, (int) CHUNK_SIZE);
-				chunk = new Chunk(data, offset, data.length);
+				chunk = new Chunk(data, offset, bytesRead, this.range);
 				this.outQueue.add(chunk);
 				offset += bytesRead;
-			} else {
-				tokenBucket.take(diff);
-				byte[] lastRange = new byte[(int) diff];
-				bytesRead = stream.read(lastRange, 0, (int) diff);
-				chunk = new Chunk(lastRange, offset, data.length);
-				this.outQueue.add(chunk);
-				offset += bytesRead;
-			}
 		}
 		stream.close();
 		connection.disconnect();

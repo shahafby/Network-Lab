@@ -21,19 +21,26 @@ public class FileWriter implements Runnable {
 	}
 
 	private void writeChunks() throws IOException, InterruptedException {
-
-		int totalNUmOfChunksInQueue, numOfWrittenChunks = 0;
+		long currentChukOffset, currentChukRangeEnd, bytesSum = 0;
+		int currentChukSize, totalNUmOfChunksInQueue, numOfWrittenChunks = 0;
 		Chunk currentChuk;
 		int prevPercent = 0, currentPercent;
 		try (RandomAccessFile raf = new RandomAccessFile(new File(downloadableMetadata.getFilename()), "rws")) {
 			totalNUmOfChunksInQueue = downloadableMetadata.totalNumOfChunks;
 			System.out.println("Downloaded: 0%");
 			
-			while (numOfWrittenChunks < totalNUmOfChunksInQueue) {
+			while (numOfWrittenChunks < totalNUmOfChunksInQueue) { // should be replaced by while true (?)
 				currentChuk = chunkQueue.take();
 				raf.seek(currentChuk.getOffset());
 				raf.write(currentChuk.getData());
-				currentPercent = (100 * numOfWrittenChunks / totalNUmOfChunksInQueue);
+				currentChukOffset = currentChuk.getOffset();
+				currentChukSize = currentChuk.getSize_in_bytes();
+				currentChukRangeEnd = currentChuk.getThisChunkRange().getEnd();
+				if(currentChukOffset + currentChukSize == currentChukRangeEnd){
+					currentChuk.getThisChunkRange().setWasWritten();
+				}
+				bytesSum += currentChuk.getSize_in_bytes();
+				currentPercent = (int) (100 * bytesSum / this.downloadableMetadata.sizeOfFile);
 				if(currentPercent != prevPercent) {
 					System.out.println("Downloaded: " + currentPercent + "%");
 				}

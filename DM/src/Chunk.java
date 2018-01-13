@@ -7,15 +7,13 @@ class Chunk {
     private byte[] data;
     private long offset;
     private int size_in_bytes;
-    private boolean wasWritten;
-    private boolean wasRead;
+    private Range thisChunkRange;
 
-    Chunk(byte[] data, long offset, int size_in_bytes) {
+    Chunk(byte[] data, long offset, int size_in_bytes, Range range) {
         this.data = data != null ? data.clone() : null;
         this.offset = offset;
         this.size_in_bytes = size_in_bytes;
-        this.wasRead = true;
-        this.wasRead = false;
+        this.thisChunkRange = range;
     }
 
     byte[] getData() {
@@ -30,9 +28,8 @@ class Chunk {
         return size_in_bytes;
     }
     
-    boolean wasRead(){
-    	return this.wasRead;
+    Range getThisChunkRange(){
+    	return this.thisChunkRange;
     }
-    
     
 }
