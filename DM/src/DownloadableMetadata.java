@@ -1,7 +1,8 @@
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
+
 
 /**
  * Describes a file's metadata: URL, file name, size, and which parts already
@@ -23,14 +24,16 @@ class DownloadableMetadata implements java.io.Serializable {
 	private int lastRangeThatWritten = 0;
 	private long sizeOfFile;
 	private File metadataFile;
-	private FileOutputStream fileOutStream;
+	//private transient FileOutputStream fileOutStream;
 
-	DownloadableMetadata(String url, Range[] ranges, long fileSize) {
+	DownloadableMetadata(String url, Range[] ranges, long fileSize) throws FileNotFoundException {
 		this.url = url;
 		this.filename = getName(url);
 		this.metadataFilename = getMetadataName(filename);
 		this.ranges = ranges;
 		this.sizeOfFile = fileSize;
+		this.metadataFile = new File(this.metadataFilename);
+		//this.fileOutStream = new FileOutputStream(this.metadataFile);
 	}
 
 	private static String getMetadataName(String filename) {
@@ -67,15 +70,17 @@ class DownloadableMetadata implements java.io.Serializable {
 	// // TODO
 	// }
 
+	
 	void delete() throws IOException {
-		fileOutStream.close();
+		//fileOutStream.close();
 		metadataFile.delete();
 	}
 
+	
 	Range getMissingRange() {
 		for (int i = lastRangeThatWritten; i < ranges.length; i++) {
 			if (!ranges[i].getWasWritten()) {
-				lastRangeThatWritten = i;
+				lastRangeThatWritten = i + 1;
 				return ranges[i];
 			}
 		}
@@ -89,14 +94,8 @@ class DownloadableMetadata implements java.io.Serializable {
 	long getSizeOfFile() {
 		return this.sizeOfFile;
 	}
-	
-	void creatMetadataFile(DownloadableMetadata DM) throws Exception {
-		metadataFile = new File(DM.getMetadataName(DM.filename));
-		fileOutStream = new FileOutputStream(metadataFile);
-		// Write metadata file
-		try (ObjectOutputStream metadataOutStream = new ObjectOutputStream(fileOutStream)) {
-			metadataOutStream.writeObject(DM);
-		}
-	}
 
+	File getFile() {
+		return this.metadataFile;
+	}
 }

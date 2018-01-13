@@ -11,8 +11,8 @@ import java.util.concurrent.BlockingQueue;
  */
 public class HTTPRangeGetter implements Runnable {
 	static final int CHUNK_SIZE = 4096;
-	private static final int CONNECT_TIMEOUT = 500;
-	private static final int READ_TIMEOUT = 2000;
+	private static final int CONNECT_TIMEOUT = 50000;
+	private static final int READ_TIMEOUT = 200000;
 	private final String url;
 	private final Range range;
 	private final BlockingQueue<Chunk> outQueue;
@@ -48,7 +48,7 @@ public class HTTPRangeGetter implements Runnable {
 		while ((bytesRead = stream.read(data, 0, (int) CHUNK_SIZE)) != -1) {
 				chunk = new Chunk(data, offset, bytesRead, this.range);
 				this.outQueue.add(chunk);
-				offset += bytesRead;
+				offset += bytesRead + 1;
 				tokenBucket.take(CHUNK_SIZE);
 		}
 		stream.close();

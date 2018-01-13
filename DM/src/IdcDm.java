@@ -88,9 +88,10 @@ public class IdcDm {
 			t_limiter.start();
 			t_writer = new Thread(new FileWriter(downloadableMetadata, dataQueue), "writing thread");
 			t_writer.start();
-			
-			while((currRange = downloadableMetadata.getMissingRange()) != null) {
+			currRange = downloadableMetadata.getMissingRange();
+			while(currRange != null) {
 				executor.submit(new HTTPRangeGetter(url, currRange, dataQueue, tokenBucket));
+				currRange = downloadableMetadata.getMissingRange();
 			}
 			executor.shutdown();
 			try {
@@ -130,14 +131,14 @@ public class IdcDm {
 	private static Range[] createRanges(long contentLength) {
 		long end, offset = 0;
 		int i;
-		int numOfRanges = (int) (contentLength / RANGE_SIZE);
+		int numOfRanges = (int) (Math.ceil(((double)contentLength / RANGE_SIZE)));
 		Range[] ranges = new Range[numOfRanges];
 		for (i = 0; i < ranges.length - 1; i++) {
-			end = offset + RANGE_SIZE;
+			end = offset + RANGE_SIZE - 1;
 			ranges[i] = new Range(offset, end);
-			offset = end;
+			offset = end + 1;
 		}
-		ranges[i] = new Range(offset, contentLength - offset);
+		ranges[i] = new Range(offset, offset + (contentLength - offset));
 		return ranges;
 	}
 }

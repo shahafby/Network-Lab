@@ -1,5 +1,7 @@
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
 import java.util.concurrent.BlockingQueue;
 
@@ -39,7 +41,7 @@ public class FileWriter implements Runnable {
 				if(currentChukOffset + currentChukSize == currentChukRangeEnd){
 					currentChuk.getThisChunkRange().setWasWritten();
 				}
-				downloadableMetadata.creatMetadataFile(downloadableMetadata);
+				this.creatMetadataFile();
 				bytesSum += currentChuk.getSize_in_bytes();
 				currentPercent = (int) (100 * bytesSum / this.downloadableMetadata.getSizeOfFile());
 				if(currentPercent != prevPercent) {
@@ -60,6 +62,18 @@ public class FileWriter implements Runnable {
 		} catch (Exception e) {
 			e.printStackTrace();
 			// TODO
+		}
+	}
+
+	void creatMetadataFile() throws Exception {
+		
+		
+		// Write metadata file
+		try (ObjectOutputStream metadataOutStream = new ObjectOutputStream(new FileOutputStream(downloadableMetadata.getFile()))) {
+			metadataOutStream.writeObject(this.downloadableMetadata);
+			metadataOutStream.close();
+		} catch (Exception e) {
+			System.err.println(e);
 		}
 	}
 }
